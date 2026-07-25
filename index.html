@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>이미지 → PDF</title>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f2f2f7;
+      --surface: #ffffff;
+      --surface2: #f2f2f7;
+      --border: #d1d1d6;
+      --border-focus: #0071e3;
+      --text: #1c1c1e;
+      --text-sub: #6c6c70;
+      --text-label: #8e8e93;
+      --accent: #0071e3;
+      --accent-light: #e8f1fc;
+      --danger: #ff3b30;
+      --danger-light: #fff1f0;
+      --radius: 10px;
+      --radius-sm: 7px;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 16px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
+      --sidebar-w: 240px;
+      --header-h: 52px;
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      height: var(--header-h);
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      position: relative;
+      z-index: 10;
+      flex-shrink: 0;
+    }
+
+    #logo-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      transition: background .15s;
+    }
+    #logo-btn:hover { background: rgba(0,0,0,.06); }
+    #logo-btn svg { flex-shrink: 0; }
+
+    .header-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Layout ── */
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    aside {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .sidebar-inner {
+      padding: 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .sidebar-section-title {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text-label);
+      margin-bottom: 8px;
+    }
+
+    /* Form controls */
+    label { display: block; font-size: 13px; color: var(--text-sub); margin-bottom: 5px; }
+
+    select, input[type="number"], input[type="text"] {
+      width: 100%;
+      height: 34px;
+      padding: 0 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: border-color .15s;
+    }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236c6c70' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+      cursor: pointer;
+    }
+    select:focus, input[type="number"]:focus, input[type="text"]:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(0,113,227,.15);
+    }
+
+    .custom-dims {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .custom-dims label { font-size: 12px; }
+
+    /* Orientation toggles */
+    .orient-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .orient-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 34px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      font-size: 13px;
+      color: var(--text-sub);
+      cursor: pointer;
+      transition: all .15s;
+      font-family: inherit;
+    }
+    .orient-btn.active {
+      background: var(--accent-light);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .orient-btn:hover:not(.active) { background: #ebebeb; }
+
+    /* Margin inputs */
+    .margin-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .margin-grid .full { grid-column: 1 / -1; }
+    .field { display: flex; flex-direction: column; }
+    .field label { font-size: 11px; color: var(--text-label); margin-bottom: 4px; }
+
+    /* Color picker */
+    .color-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .color-preview {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      flex-shrink: 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .color-preview input[type="color"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      border: none;
+      padding: 0;
+    }
+    .color-hex {
+      flex: 1;
+      font-size: 12px;
+      font-family: 'SF Mono', 'Menlo', monospace;
+      text-transform: uppercase;
+    }
+
+    /* ── Main content ── */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Drop zone (empty state) */
+    #dropzone {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin: 20px;
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      background: var(--surface);
+      cursor: pointer;
+      transition: all .2s;
+      user-select: none;
+    }
+    #dropzone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+    #dropzone:hover { border-color: #aaa; background: #fafafa; }
+    #dropzone.drag-over:hover { border-color: var(--accent); background: var(--accent-light); }
+
+    .dropzone-icon {
+      width: 56px;
+      height: 56px;
+      background: var(--bg);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-sub);
+    }
+    .dropzone-title { font-size: 17px; font-weight: 600; color: var(--text); }
+    .dropzone-sub { font-size: 13px; color: var(--text-sub); }
+    .dropzone-types { font-size: 11px; color: var(--text-label); }
+
+    /* Image workspace */
+    #workspace {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .toolbar-count {
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+    .toolbar-spacer { flex: 1; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .btn svg { flex-shrink: 0; }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: #0062cc; }
+    .btn-primary:active { background: #0055b3; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-sub);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--bg); color: var(--text); }
+    .btn-danger {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid #ffc9c6;
+    }
+    .btn-danger:hover { background: var(--danger-light); }
+
+    .btn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    /* Image grid scroll area */
+    #img-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    #img-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 12px;
+    }
+
+    /* Image card */
+    .img-card {
+      position: relative;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      cursor: grab;
+      transition: box-shadow .15s, transform .15s, opacity .15s;
+      user-select: none;
+    }
+    .img-card:active { cursor: grabbing; }
+    .img-card.dragging {
+      opacity: .4;
+      transform: scale(.97);
+    }
+    .img-card.drag-target {
+      box-shadow: 0 0 0 2px var(--accent), var(--shadow-md);
+    }
+
+    .img-card-thumb {
+      aspect-ratio: 3/4;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .img-card-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+    .img-card-footer {
+      padding: 6px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .img-card-num {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-label);
+    }
+    .img-card-name {
+      font-size: 10px;
+      color: var(--text-label);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 70px;
+    }
+    .img-card-del {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-label);
+      transition: all .15s;
+      flex-shrink: 0;
+    }
+    .img-card-del:hover { background: var(--danger-light); color: var(--danger); }
+
+    /* Drop indicator card */
+    .drop-indicator {
+      border: 2px dashed var(--accent);
+      background: var(--accent-light);
+      border-radius: var(--radius);
+      pointer-events: none;
+    }
+
+    /* ── Progress overlay ── */
+    #progress-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,.8);
+      backdrop-filter: blur(8px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 100;
+    }
+    #progress-overlay.visible { display: flex; }
+
+    .progress-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 40px;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      min-width: 280px;
+    }
+    .progress-title { font-size: 16px; font-weight: 600; }
+    .progress-sub { font-size: 13px; color: var(--text-sub); }
+    .progress-bar-wrap {
+      width: 100%;
+      height: 6px;
+      background: var(--bg);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 99px;
+      transition: width .2s;
+      width: 0%;
+    }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1c1c1e;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity .2s, transform .2s;
+      pointer-events: none;
+      z-index: 200;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #c7c7cc; border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: #aeaeb2; }
+
+    /* Responsive tweaks */
+    @media (max-width: 600px) {
+      :root { --sidebar-w: 200px; }
+      #img-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <button id="logo-btn" title="처음으로 돌아가기">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+      <polyline points="10 9 9 9 8 9"/>
+    </svg>
+    이미지 → PDF
+  </button>
+</header>
+
+<!-- ── Layout ── -->
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside>
+    <div class="sidebar-inner">
+
+      <!-- 크기 -->
+      <div>
+        <div class="sidebar-section-title">크기</div>
+        <select id="page-size">
+          <option value="ipad">iPad (768 × 1024)</option>
+          <option value="ipad-pro-11">iPad Pro 11" (834 × 1194)</option>
+          <option value="ipad-pro-13">iPad Pro 13" (1024 × 1366)</option>
+          <option value="a4">A4 (595 × 842)</option>
+          <option value="letter">Letter (612 × 792)</option>
+          <option value="custom">직접 입력</option>
+        </select>
+
+        <div class="custom-dims" id="custom-dims" style="display:none;">
+          <div class="field">
+            <label>너비 (pt)</label>
+            <input type="number" id="custom-w" value="768" min="100" max="5000">
+          </div>
+          <div class="field">
+            <label>높이 (pt)</label>
+            <input type="number" id="custom-h" value="1024" min="100" max="5000">
+          </div>
+        </div>
+      </div>
+
+      <!-- 방향 -->
+      <div>
+        <div class="sidebar-section-title">방향</div>
+        <div class="orient-group">
+          <button class="orient-btn active" id="orient-portrait" data-value="portrait">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="2" width="14" height="20" rx="2"/>
+            </svg>
+            세로
+          </button>
+          <button class="orient-btn" id="orient-landscape" data-value="landscape">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2"/>
+            </svg>
+            가로
+          </button>
+        </div>
+      </div>
+
+      <!-- 여백 -->
+      <div>
+        <div class="sidebar-section-title">여백 (pt)</div>
+        <div class="margin-grid">
+          <div class="field full">
+            <label>상하</label>
+            <input type="number" id="margin-v" value="50" min="0" max="500">
+          </div>
+          <div class="field">
+            <label>왼쪽</label>
+            <input type="number" id="margin-l" value="20" min="0" max="500">
+          </div>
+          <div class="field">
+            <label>오른쪽</label>
+            <input type="number" id="margin-r" value="400" min="0" max="500">
+          </div>
+        </div>
+      </div>
+
+      <!-- 배경색 -->
+      <div>
+        <div class="sidebar-section-title">배경색</div>
+        <div class="color-row">
+          <div class="color-preview" id="color-preview-box" style="background:#ffffff;">
+            <input type="color" id="bg-color" value="#ffffff">
+          </div>
+          <input type="text" id="bg-color-hex" class="color-hex" value="#FFFFFF" maxlength="7" spellcheck="false">
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ── Main Content ── -->
+  <main>
+
+    <!-- Empty state: drop zone -->
+    <div id="dropzone">
+      <div class="dropzone-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="16 16 12 12 8 16"/>
+          <line x1="12" y1="12" x2="12" y2="21"/>
+          <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+        </svg>
+      </div>
+      <div class="dropzone-title">이미지 불러오기</div>
+      <div class="dropzone-sub">클릭하거나 이미지를 여기에 드래그하세요</div>
+      <div class="dropzone-types">JPG · PNG · WEBP · GIF</div>
+    </div>
+
+    <!-- Image workspace -->
+    <div id="workspace" style="display:none;">
+      <div class="toolbar">
+        <span class="toolbar-count" id="img-count">0장</span>
+        <div class="toolbar-spacer"></div>
+        <button class="btn btn-ghost" id="add-more-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          추가
+        </button>
+        <button class="btn btn-danger" id="clear-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+          전체 삭제
+        </button>
+        <button class="btn btn-primary" id="generate-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          PDF 생성
+        </button>
+      </div>
+
+      <!-- Drop zone overlay for adding more -->
+      <div id="img-scroll"
+        ondragover="onScrollDragOver(event)"
+        ondragleave="onScrollDragLeave(event)"
+        ondrop="onScrollDrop(event)">
+        <div id="img-grid"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Progress overlay ── -->
+<div id="progress-overlay">
+  <div class="progress-card">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+    </svg>
+    <div class="progress-title">PDF 생성 중...</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <div class="progress-sub" id="progress-text">0 / 0</div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div id="toast"></div>
+
+<!-- Hidden file input -->
+<input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/gif" multiple style="display:none">
+
+<script>
+  // ─── State ───────────────────────────────────────────────────────────────────
+  let images = []; // { id, file, previewUrl }
+  let settings = {
+    pageSize: 'ipad',
+    customWidth: 768,
+    customHeight: 1024,
+    backgroundColor: '#ffffff',
+    orientation: 'portrait',
+    marginV: 20,
+    marginL: 20,
+    marginR: 400,
+  };
+
+  // Page size definitions in pts (portrait)
+  const PAGE_SIZES = {
+    'ipad':        [768, 1024],
+    'ipad-pro-11': [834, 1194],
+    'ipad-pro-13': [1024, 1366],
+    'a4':          [595, 842],
+    'letter':      [612, 792],
+  };
+
+  // ─── Element refs ─────────────────────────────────────────────────────────────
+  const dropzone       = document.getElementById('dropzone');
+  const workspace      = document.getElementById('workspace');
+  const imgGrid        = document.getElementById('img-grid');
+  const imgCount       = document.getElementById('img-count');
+  const fileInput      = document.getElementById('file-input');
+  const progressOverlay= document.getElementById('progress-overlay');
+  const progressBar    = document.getElementById('progress-bar');
+  const progressText   = document.getElementById('progress-text');
+  const toastEl        = document.getElementById('toast');
+
+  // ─── Settings binding ─────────────────────────────────────────────────────────
+  document.getElementById('page-size').addEventListener('change', e => {
+    settings.pageSize = e.target.value;
+    document.getElementById('custom-dims').style.display = e.target.value === 'custom' ? 'grid' : 'none';
+    if (e.target.value !== 'custom') {
+      const [w, h] = PAGE_SIZES[e.target.value];
+      settings.customWidth = w;
+      settings.customHeight = h;
+    }
+  });
+
+  document.getElementById('custom-w').addEventListener('input', e => {
+    settings.customWidth = Number(e.target.value);
+  });
+  document.getElementById('custom-h').addEventListener('input', e => {
+    settings.customHeight = Number(e.target.value);
+  });
+
+  document.querySelectorAll('.orient-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.orient-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      settings.orientation = btn.dataset.value;
+    });
+  });
+
+  document.getElementById('margin-v').addEventListener('input', e => { settings.marginV = Number(e.target.value); });
+  document.getElementById('margin-l').addEventListener('input', e => { settings.marginL = Number(e.target.value); });
+  document.getElementById('margin-r').addEventListener('input', e => { settings.marginR = Number(e.target.value); });
+
+  // Color picker sync
+  const bgColorInput = document.getElementById('bg-color');
+  const bgColorHex   = document.getElementById('bg-color-hex');
+  const colorPreviewBox = document.getElementById('color-preview-box');
+
+  bgColorInput.addEventListener('input', e => {
+    const hex = e.target.value;
+    settings.backgroundColor = hex;
+    colorPreviewBox.style.background = hex;
+    bgColorHex.value = hex.toUpperCase();
+  });
+
+  bgColorHex.addEventListener('input', e => {
+    let val = e.target.value.trim();
+    if (!val.startsWith('#')) val = '#' + val;
+    if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+      settings.backgroundColor = val;
+      bgColorInput.value = val;
+      colorPreviewBox.style.background = val;
+    }
+  });
+  bgColorHex.addEventListener('blur', e => {
+    bgColorHex.value = settings.backgroundColor.toUpperCase();
+  });
+
+  // ─── File handling ─────────────────────────────────────────────────────────────
+  function handleFiles(files) {
+    const VALID = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const all = Array.from(files);
+    const valid = all.filter(f => VALID.includes(f.type));
+    if (valid.length !== all.length) {
+      showToast('JPG, PNG, WEBP, GIF 파일만 지원됩니다.');
+    }
+    if (valid.length > 0) {
+      const newImgs = valid.map(f => ({
+        id: crypto.randomUUID(),
+        file: f,
+        previewUrl: URL.createObjectURL(f),
+      }));
+      images = [...images, ...newImgs];
+      renderImages();
+    }
+  }
+
+  // ─── Drop zone (empty state) ──────────────────────────────────────────────────
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropzone.classList.add('drag-over');
+  });
+  dropzone.addEventListener('dragleave', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+  });
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+  });
+
+  // Drop on scroll area (add more via file drag from OS)
+  let scrollDragFromOS = false;
+
+  function onScrollDragOver(e) {
+    // Only handle OS file drags, not card reorder drags
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+  function onScrollDragLeave(e) { /* no-op */ }
+  function onScrollDrop(e) {
+    if (e.dataTransfer.files.length) {
+      e.preventDefault();
+      handleFiles(e.dataTransfer.files);
+    }
+  }
+
+  // File input
+  fileInput.addEventListener('change', e => {
+    if (e.target.files.length) {
+      handleFiles(e.target.files);
+      fileInput.value = '';
+    }
+  });
+
+  // Logo = reset
+  document.getElementById('logo-btn').addEventListener('click', () => {
+    if (images.length === 0 || confirm('이미지를 모두 지우고 처음으로 돌아가시겠어요?')) {
+      clearImages();
+    }
+  });
+
+  // Toolbar buttons
+  document.getElementById('add-more-btn').addEventListener('click', () => fileInput.click());
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    if (confirm('이미지를 모두 삭제할까요?')) clearImages();
+  });
+  document.getElementById('generate-btn').addEventListener('click', generateAndDownload);
+
+  // ─── Render ───────────────────────────────────────────────────────────────────
+  function renderImages() {
+    const hasImages = images.length > 0;
+    dropzone.style.display = hasImages ? 'none' : 'flex';
+    workspace.style.display = hasImages ? 'flex' : 'none';
+    imgCount.textContent = `${images.length}장`;
+
+    imgGrid.innerHTML = '';
+    images.forEach((img, i) => {
+      const card = createCard(img, i);
+      imgGrid.appendChild(card);
+    });
+  }
+
+  function createCard(img, index) {
+    const card = document.createElement('div');
+    card.className = 'img-card';
+    card.dataset.id = img.id;
+    card.draggable = true;
+
+    card.innerHTML = `
+      <div class="img-card-thumb">
+        <img src="${img.previewUrl}" alt="${img.file.name}" draggable="false">
+      </div>
+      <div class="img-card-footer">
+        <span class="img-card-num">${index + 1}</span>
+        <span class="img-card-name" title="${img.file.name}">${img.file.name}</span>
+        <button class="img-card-del" title="삭제" data-id="${img.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    `;
+
+    // Delete
+    card.querySelector('.img-card-del').addEventListener('click', e => {
+      e.stopPropagation();
+      const id = e.currentTarget.dataset.id;
+      const removed = images.find(i => i.id === id);
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      images = images.filter(i => i.id !== id);
+      renderImages();
+    });
+
+    // Drag-to-reorder
+    card.addEventListener('dragstart', onCardDragStart);
+    card.addEventListener('dragover', onCardDragOver);
+    card.addEventListener('dragleave', onCardDragLeave);
+    card.addEventListener('drop', onCardDrop);
+    card.addEventListener('dragend', onCardDragEnd);
+
+    return card;
+  }
+
+  // ─── Drag-to-reorder ──────────────────────────────────────────────────────────
+  let dragSrcId = null;
+  let dragOverId = null;
+
+  function onCardDragStart(e) {
+    dragSrcId = this.dataset.id;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', dragSrcId); // required for Firefox
+  }
+
+  function onCardDragOver(e) {
+    // Only handle card reorder, not OS file drags
+    if (e.dataTransfer.types.includes('Files')) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const targetId = this.dataset.id;
+    if (targetId !== dragSrcId && targetId !== dragOverId) {
+      if (dragOverId) {
+        const prev = imgGrid.querySelector(`[data-id="${dragOverId}"]`);
+        if (prev) prev.classList.remove('drag-target');
+      }
+      dragOverId = targetId;
+      this.classList.add('drag-target');
+    }
+  }
+
+  function onCardDragLeave(e) {
+    this.classList.remove('drag-target');
+    if (dragOverId === this.dataset.id) dragOverId = null;
+  }
+
+  function onCardDrop(e) {
+    if (e.dataTransfer.types.includes('Files')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const targetId = this.dataset.id;
+    if (dragSrcId && targetId && dragSrcId !== targetId) {
+      const from = images.findIndex(i => i.id === dragSrcId);
+      const to   = images.findIndex(i => i.id === targetId);
+      if (from !== -1 && to !== -1) {
+        const arr = [...images];
+        const [item] = arr.splice(from, 1);
+        arr.splice(to, 0, item);
+        images = arr;
+        renderImages();
+      }
+    }
+    this.classList.remove('drag-target');
+  }
+
+  function onCardDragEnd(e) {
+    this.classList.remove('dragging');
+    imgGrid.querySelectorAll('.drag-target').forEach(el => el.classList.remove('drag-target'));
+    dragSrcId = null;
+    dragOverId = null;
+  }
+
+  // ─── Clear ────────────────────────────────────────────────────────────────────
+  function clearImages() {
+    images.forEach(img => URL.revokeObjectURL(img.previewUrl));
+    images = [];
+    renderImages();
+  }
+
+  // ─── PDF Generation ───────────────────────────────────────────────────────────
+  async function fileToPngBuffer(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        canvas.toBlob(blob => {
+          URL.revokeObjectURL(url);
+          blob.arrayBuffer().then(resolve).catch(reject);
+        }, 'image/png');
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+      img.src = url;
+    });
+  }
+
+  function hexToRgb01(hex) {
+    const n = parseInt(hex.replace('#', ''), 16);
+    return {
+      r: ((n >> 16) & 255) / 255,
+      g: ((n >>  8) & 255) / 255,
+      b: ((n >>  0) & 255) / 255,
+    };
+  }
+
+  async function generateAndDownload() {
+    if (images.length === 0) return;
+
+    const { PDFDocument, rgb } = PDFLib;
+
+    // Resolve page dimensions
+    let [baseW, baseH] =
+      settings.pageSize === 'custom'
+        ? [settings.customWidth, settings.customHeight]
+        : PAGE_SIZES[settings.pageSize];
+
+    let pageW = baseW;
+    let pageH = baseH;
+    if (settings.orientation === 'landscape') {
+      [pageW, pageH] = [Math.max(baseW, baseH), Math.min(baseW, baseH)];
+    } else {
+      [pageW, pageH] = [Math.min(baseW, baseH), Math.max(baseW, baseH)];
+    }
+
+    const mV = settings.marginV;
+    const mL = settings.marginL;
+    const mR = settings.marginR;
+
+    const drawW = pageW - mL - mR;
+    const drawH = pageH - 2 * mV;
+
+    if (drawW <= 0 || drawH <= 0) {
+      showToast('여백이 너무 큽니다. 여백을 줄여주세요.');
+      return;
+    }
+
+    const bgColor = hexToRgb01(settings.backgroundColor);
+
+    // Show progress
+    progressOverlay.classList.add('visible');
+    setProgress(0, images.length);
+
+    try {
+      const pdfDoc = await PDFDocument.create();
+
+      for (let i = 0; i < images.length; i++) {
+        const item = images[i];
+        const arrayBuffer = await item.file.arrayBuffer();
+        let embeddedImage;
+
+        if (item.file.type === 'image/jpeg') {
+          embeddedImage = await pdfDoc.embedJpg(arrayBuffer);
+        } else if (item.file.type === 'image/png') {
+          embeddedImage = await pdfDoc.embedPng(arrayBuffer);
+        } else {
+          // WEBP, GIF → convert via canvas to PNG
+          const pngBuffer = await fileToPngBuffer(item.file);
+          embeddedImage = await pdfDoc.embedPng(pngBuffer);
+        }
+
+        const page = pdfDoc.addPage([pageW, pageH]);
+
+        // Background
+        page.drawRectangle({
+          x: 0, y: 0,
+          width: pageW, height: pageH,
+          color: rgb(bgColor.r, bgColor.g, bgColor.b),
+        });
+
+        const imgW = embeddedImage.width;
+        const imgH = embeddedImage.height;
+        const imgRatio  = imgW / imgH;
+        const drawRatio = drawW / drawH;
+
+        let scaledW, scaledH, x, y;
+
+        if (imgRatio > drawRatio) {
+          // 이미지가 더 넓음 → 너비 맞추기, 상단 정렬
+          scaledW = drawW;
+          scaledH = imgH * (drawW / imgW);
+          x = mL;
+          y = mV + drawH - scaledH; // pdf-lib: y=0 is bottom
+        } else {
+          // 이미지가 더 높음 → 높이 맞추기, 좌우 중앙 정렬
+          scaledH = drawH;
+          scaledW = imgW * (drawH / imgH);
+          x = mL + (drawW - scaledW) / 2;
+          y = mV;
+        }
+
+        page.drawImage(embeddedImage, { x, y, width: scaledW, height: scaledH });
+
+        setProgress(i + 1, images.length);
+      }
+
+      const pdfBytes = await pdfDoc.save();
+
+      // Download
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url;
+      a.download = `images_${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+      showToast('PDF가 다운로드되었습니다!');
+    } catch (err) {
+      console.error(err);
+      showToast('PDF 생성 중 오류가 발생했습니다.');
+    } finally {
+      progressOverlay.classList.remove('visible');
+    }
+  }
+
+  function setProgress(done, total) {
+    const pct = total > 0 ? (done / total) * 100 : 0;
+    progressBar.style.width = pct + '%';
+    progressText.textContent = `${done} / ${total}`;
+  }
+
+  // ─── Toast ────────────────────────────────────────────────────────────────────
+  let toastTimer = null;
+  function showToast(msg, duration = 2800) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), duration);
+  }
+
+  // ─── Init ────────────────────────────────────────────────────────────────────
+  renderImages();
+</script>
+</body>
+</html>
