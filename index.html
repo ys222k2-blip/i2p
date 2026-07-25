@@ -4,28 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>이미지 → PDF 변환기</title>
-  <!-- Pretendard 폰트 불러오기 (눈이 편한 스킨) -->
+  <!-- Pretendard 폰트 불러오기 -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      /* ── 눈이 편안한 라이트 모드 (Neutral Warm & Sage) ── */
-      --bg: #F8F7F4;          /* 아주 연한 크림베이지 (눈 자극 최소화) */
-      --surface: #FFFFFF;     /* 순백색 */
-      --surface2: #F1F0EA;    /* 약간 더 짙은 워밍톤 회색 */
-      --border: #E2E0D6;      /* 연한 베이지색 테두리 */
-      --border-focus: #769581; /* 차분한 세이지 그린 */
-      --text: #33302C;        /* 짙은 브라운- 회색 톤 */
+      /* ── 라이트 모드 (Neutral Warm & Sage) ── */
+      --bg: #F8F7F4;
+      --surface: #FFFFFF;
+      --surface2: #F1F0EA;
+      --border: #E2E0D6;
+      --border-focus: #769581;
+      --text: #33302C;
       --text-sub: #656059;    
       --text-label: #8C867E;  
       
-      --accent: #587363;      /* 차분한 세이지 그린 */
+      --accent: #587363;
       --accent-dim: rgba(88, 115, 99, 0.12);
       --accent-text: #FFFFFF;
       
-      --danger: #C86B6B;      /* 차분한 톤다운 레드 */
+      --danger: #C86B6B;
       --danger-light: #F9EDED;
       
       --radius-xl: 20px;
@@ -471,7 +471,7 @@
       position: absolute;
       top: -6px;
       bottom: -6px;
-      left: -14px; /* 그리드 gap(24px) 중앙에 위치 */
+      left: -14px;
       width: 4px;
       background: var(--accent);
       border-radius: 4px;
@@ -484,7 +484,7 @@
       position: absolute;
       top: -6px;
       bottom: -6px;
-      right: -14px; /* 그리드 gap(24px) 중앙에 위치 */
+      right: -14px;
       width: 4px;
       background: var(--accent);
       border-radius: 4px;
@@ -751,7 +751,7 @@
         </div>
       </div>
 
-      <!-- 여백 (기본값: 상하 50, 오른쪽 400 복구) -->
+      <!-- 여백 -->
       <div>
         <div class="sidebar-section-title">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18"/><path d="M19 3v18"/><path d="M11 19l-3-3 3-3"/><path d="M13 5l3 3-3 3"/></svg>
@@ -793,7 +793,7 @@
   <!-- ── Main Content ── -->
   <main>
 
-    <!-- Empty state: drop zone -->
+    <!-- Drop zone (empty state) -->
     <div id="dropzone">
       <div class="dropzone-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -809,7 +809,22 @@
 
     <!-- Image workspace -->
     <div id="workspace" style="display:none;">
+      
+      <!-- ── 재배치된 버튼 툴바 ── -->
       <div class="toolbar">
+        <!-- 메인 액션인 PDF 다운로드를 맨 왼쪽으로 이동 -->
+        <button class="btn btn-primary" id="generate-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          PDF 다운로드
+        </button>
+        
+        <div class="toolbar-spacer"></div>
+        
+        <!-- 이미지 관리 기능들을 우측으로 묶음 -->
+        <span class="toolbar-count" id="img-count">0장</span>
+
         <button class="btn btn-ghost" id="add-more-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -821,17 +836,6 @@
             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
           </svg>
           전체 삭제
-        </button>
-        
-        <div class="toolbar-spacer"></div>
-        
-        <span class="toolbar-count" id="img-count">0장</span>
-
-        <button class="btn btn-primary" id="generate-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          PDF 다운로드
         </button>
       </div>
 
@@ -891,7 +895,7 @@
     }
   }
 
-  // ─── State (기본값: marginV: 50, marginR: 400 복구) ───────────────────────────
+  // ─── State ───────────────────────────
   let images = [];
   let settings = {
     pageSize: 'ipad',
@@ -1116,7 +1120,7 @@
     return card;
   }
 
-  // ─── Drag-to-reorder logic (카드 사이 삽입 라인 표시 방식) ───────────────────
+  // ─── Drag-to-reorder logic ───────────────────
   let dragSrcId = null;
 
   function clearDropIndicators() {
@@ -1143,7 +1147,6 @@
       return;
     }
 
-    // 마우스/펜슬 좌표에 따라 카드의 왼쪽 절반에 있는지, 오른쪽 절반에 있는지 판별
     const rect = this.getBoundingClientRect();
     const midX = rect.left + rect.width / 2;
     
@@ -1178,10 +1181,9 @@
     let targetIndex = images.findIndex(i => i.id === targetId);
 
     if (fromIndex !== -1 && targetIndex !== -1) {
-      if (!isBefore) targetIndex += 1; // 카드의 오른쪽에 놓으면 Target 다음 위치로
+      if (!isBefore) targetIndex += 1;
       
       const [item] = images.splice(fromIndex, 1);
-      // 원래 위치(from)가 목표 위치(target)보다 앞이었으면 인덱스 보정
       const finalIndex = fromIndex < targetIndex ? targetIndex - 1 : targetIndex;
       images.splice(finalIndex, 0, item);
       renderImages();
