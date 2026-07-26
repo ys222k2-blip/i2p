@@ -3,62 +3,358 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>이미지 → PDF 변환기</title>
+  <title>img2PDF</title>
   <!-- Pretendard 폰트 불러오기 -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* ── 공통 레이아웃 및 크기 변수 ── */
     :root {
-      /* ── 라이트 모드 (Neutral Warm & Sage) ── */
-      --bg: #F8F7F4;
-      --surface: #FFFFFF;
-      --surface2: #F1F0EA;
-      --border: #E2E0D6;
-      --border-focus: #769581;
-      --text: #33302C;
-      --text-sub: #656059;    
-      --text-label: #8C867E;  
-      
-      --accent: #587363;
-      --accent-dim: rgba(88, 115, 99, 0.12);
-      --accent-text: #FFFFFF;
-      
-      --danger: #C86B6B;
-      --danger-light: #F9EDED;
-      
       --radius-xl: 20px;
       --radius-lg: 16px;
       --radius-md: 12px;
       --radius-sm: 8px;
       
-      --shadow-sm: 0 2px 8px rgba(51, 48, 44, 0.03);
-      --shadow-md: 0 10px 30px rgba(51, 48, 44, 0.08);
-      --shadow-lg: 0 15px 40px rgba(51, 48, 44, 0.12);
-      
-      --sidebar-w: 260px; /* 좌우 폭 살짝 축소 */
-      --header-h: 64px;
+      --sidebar-w: 280px;
       --transition: background-color 0.2s, border-color 0.2s, color 0.2s;
     }
 
-    /* ── 다크 모드 (Deep Charcoal) ── */
-    body.dark-theme {
-      --bg: #1A1C1A;
-      --surface: #242624;
-      --surface2: #2E312E;
-      --border: #3A3D3A;
-      --border-focus: #8CAF9A;
-      --text: #ECEEEB;
-      --text-sub: #B0B5B0;
-      --text-label: #888E88;
-      --accent: #8CAF9A;
-      --accent-dim: rgba(140, 175, 154, 0.18);
-      --danger: #E08585;
-      --danger-light: #3D2626;
+    /* ── 1. 파란색 테마 (기본) ── */
+    body.theme-blue {
+      --bg: #F5F7FA;
+      --surface: #FFFFFF;
+      --surface2: #EAF0F6;
+      --border: #D8E2EF;
+      --border-focus: #3B82F6;
+      --text: #1E293B;
+      --text-sub: #64748B;    
+      --text-label: #94A3B8;  
+      --accent: #3B82F6;
+      --accent-dim: rgba(59, 130, 246, 0.12);
+      --accent-text: #FFFFFF;
+      --danger: #EF4444;
+      --danger-light: #FEE2E2;
+      --shadow-sm: 0 2px 8px rgba(30, 41, 59, 0.04);
+      --shadow-md: 0 10px 30px rgba(30, 41, 59, 0.08);
+      --shadow-lg: 0 15px 40px rgba(30, 41, 59, 0.12);
+    }
+    body.theme-blue.dark-theme {
+      --bg: #0F172A;
+      --surface: #1E293B;
+      --surface2: #334155;
+      --border: #475569;
+      --border-focus: #60A5FA;
+      --text: #F8FAFC;
+      --text-sub: #94A3B8;
+      --text-label: #64748B;
+      --accent: #60A5FA;
+      --accent-dim: rgba(96, 165, 250, 0.15);
+      --danger: #F87171;
+      --danger-light: #451A1A;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-md: 0 10px 30px rgba(0,0,0,0.4);
+      --shadow-lg: 0 15px 40px rgba(0,0,0,0.5);
+    }
+
+    /* ── 2. 오렌지 테마 ── */
+    body.theme-orange {
+      --bg: #FAF8F5;
+      --surface: #FFFFFF;
+      --surface2: #F1EFEA;
+      --border: #E5E2DC;
+      --border-focus: #D97757;
+      --text: #2D2C2A;
+      --text-sub: #73706A;    
+      --text-label: #8C8681;  
+      --accent: #D97757;
+      --accent-dim: rgba(217, 119, 87, 0.12);
+      --accent-text: #FFFFFF;
+      --danger: #D95757;
+      --danger-light: #FCE8E8;
+      --shadow-sm: 0 2px 8px rgba(45, 44, 42, 0.04);
+      --shadow-md: 0 10px 30px rgba(45, 44, 42, 0.08);
+      --shadow-lg: 0 15px 40px rgba(45, 44, 42, 0.12);
+    }
+    body.theme-orange.dark-theme {
+      --bg: #1B1A19;
+      --surface: #242322;
+      --surface2: #2D2C2A;
+      --border: #3D3B39;
+      --border-focus: #D97757;
+      --text: #E8E6E3;
+      --text-sub: #A6A29E;
+      --text-label: #8B8681;
+      --accent: #C2715B;
+      --accent-dim: rgba(194, 113, 91, 0.15);
+      --danger: #E06666;
+      --danger-light: #3D2424;
       --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
       --shadow-md: 0 10px 30px rgba(0,0,0,0.3);
       --shadow-lg: 0 15px 40px rgba(0,0,0,0.4);
+    }
+
+    /* ── 3. 초록 테마 ── */
+    body.theme-green {
+      --bg: #F4FBF7;
+      --surface: #FFFFFF;
+      --surface2: #E8F5ED;
+      --border: #D1E8DB;
+      --border-focus: #10B981;
+      --text: #1C2E26;
+      --text-sub: #657D72;
+      --text-label: #8EA89C;
+      --accent: #10B981;
+      --accent-dim: rgba(16, 185, 129, 0.12);
+      --accent-text: #FFFFFF;
+      --danger: #EF4444;
+      --danger-light: #FEE2E2;
+      --shadow-sm: 0 2px 8px rgba(28, 46, 38, 0.04);
+      --shadow-md: 0 10px 30px rgba(28, 46, 38, 0.08);
+      --shadow-lg: 0 15px 40px rgba(28, 46, 38, 0.12);
+    }
+    body.theme-green.dark-theme {
+      --bg: #0C1A14;
+      --surface: #13271E;
+      --surface2: #1E3B2E;
+      --border: #2C5240;
+      --border-focus: #34D399;
+      --text: #ECFDF5;
+      --text-sub: #A7F3D0;
+      --text-label: #6EE7B7;
+      --accent: #34D399;
+      --accent-dim: rgba(52, 211, 153, 0.15);
+      --danger: #F87171;
+      --danger-light: #451A1A;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-md: 0 10px 30px rgba(0,0,0,0.4);
+      --shadow-lg: 0 15px 40px rgba(0,0,0,0.5);
+    }
+
+    /* ── 4. 갈색 테마 ── */
+    body.theme-brown {
+      --bg: #FAF6F0;
+      --surface: #FFFFFF;
+      --surface2: #F0E8DD;
+      --border: #E0D3C1;
+      --border-focus: #A0522D;
+      --text: #3E2723;
+      --text-sub: #795548;
+      --text-label: #A1887F;
+      --accent: #A0522D;
+      --accent-dim: rgba(160, 82, 45, 0.12);
+      --accent-text: #FFFFFF;
+      --danger: #D32F2F;
+      --danger-light: #FFEBEE;
+      --shadow-sm: 0 2px 8px rgba(62, 39, 35, 0.04);
+      --shadow-md: 0 10px 30px rgba(62, 39, 35, 0.08);
+      --shadow-lg: 0 15px 40px rgba(62, 39, 35, 0.12);
+    }
+    body.theme-brown.dark-theme {
+      --bg: #201A16;
+      --surface: #2D241E;
+      --surface2: #3E322A;
+      --border: #57463B;
+      --border-focus: #D28F6B;
+      --text: #EFEBE7;
+      --text-sub: #BCAAA0;
+      --text-label: #8D6E63;
+      --accent: #D28F6B;
+      --accent-dim: rgba(210, 143, 107, 0.15);
+      --danger: #EF5350;
+      --danger-light: #4A1A1A;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-md: 0 10px 30px rgba(0,0,0,0.4);
+      --shadow-lg: 0 15px 40px rgba(0,0,0,0.5);
+    }
+
+    /* ── 5. 흑백 테마 ── */
+    body.theme-bw {
+      --bg: #F4F4F5;
+      --surface: #FFFFFF;
+      --surface2: #E4E4E7;
+      --border: #D4D4D8;
+      --border-focus: #18181B;
+      --text: #09090B;
+      --text-sub: #71717A;
+      --text-label: #A1A1AA;
+      --accent: #18181B;
+      --accent-dim: rgba(24, 24, 27, 0.1);
+      --accent-text: #FFFFFF;
+      --danger: #EF4444;
+      --danger-light: #FEE2E2;
+      --shadow-sm: 0 2px 8px rgba(9, 9, 11, 0.04);
+      --shadow-md: 0 10px 30px rgba(9, 9, 11, 0.08);
+      --shadow-lg: 0 15px 40px rgba(9, 9, 11, 0.12);
+    }
+    body.theme-bw.dark-theme {
+      --bg: #09090B;
+      --surface: #18181B;
+      --surface2: #27272A;
+      --border: #3F3F46;
+      --border-focus: #FAFAFA;
+      --text: #FAFAFA;
+      --text-sub: #A1A1AA;
+      --text-label: #71717A;
+      --accent: #FAFAFA;
+      --accent-dim: rgba(250, 250, 250, 0.15);
+      --accent-text: #000000; /* 다크모드 흑백일 땐 버튼 텍스트가 검은색이어야 함 */
+      --danger: #F87171;
+      --danger-light: #451A1A;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.5);
+      --shadow-md: 0 10px 30px rgba(0,0,0,0.7);
+      --shadow-lg: 0 15px 40px rgba(0,0,0,0.9);
+    }
+
+    /* ── 6. 퍼플 테마 ── */
+    body.theme-purple {
+      --bg: #F8F5FF;
+      --surface: #FFFFFF;
+      --surface2: #EEE8FB;
+      --border: #DDD4F7;
+      --border-focus: #7C3AED;
+      --text: #1E1030;
+      --text-sub: #6B5CA5;
+      --text-label: #9E8CC9;
+      --accent: #7C3AED;
+      --accent-dim: rgba(124, 58, 237, 0.12);
+      --accent-text: #FFFFFF;
+      --danger: #EF4444;
+      --danger-light: #FEE2E2;
+      --shadow-sm: 0 2px 8px rgba(30, 16, 48, 0.04);
+      --shadow-md: 0 10px 30px rgba(30, 16, 48, 0.08);
+      --shadow-lg: 0 15px 40px rgba(30, 16, 48, 0.12);
+    }
+    body.theme-purple.dark-theme {
+      --bg: #0F0820;
+      --surface: #1A1030;
+      --surface2: #261A40;
+      --border: #3A2860;
+      --border-focus: #A78BFA;
+      --text: #F3EEFF;
+      --text-sub: #C4B5FD;
+      --text-label: #8B7EC8;
+      --accent: #A78BFA;
+      --accent-dim: rgba(167, 139, 250, 0.15);
+      --danger: #F87171;
+      --danger-light: #451A1A;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-md: 0 10px 30px rgba(0,0,0,0.4);
+      --shadow-lg: 0 15px 40px rgba(0,0,0,0.5);
+    }
+
+    /* ── 7. 머스터드 테마 ── */
+    body.theme-mustard {
+      --bg: #FFFBF0;
+      --surface: #FFFFFF;
+      --surface2: #FFF3CC;
+      --border: #EEE0A0;
+      --border-focus: #C8960A;
+      --text: #2A2000;
+      --text-sub: #7A6020;
+      --text-label: #A88C40;
+      --accent: #C8960A;
+      --accent-dim: rgba(200, 150, 10, 0.12);
+      --accent-text: #FFFFFF;
+      --danger: #D32F2F;
+      --danger-light: #FFEBEE;
+      --shadow-sm: 0 2px 8px rgba(42, 32, 0, 0.04);
+      --shadow-md: 0 10px 30px rgba(42, 32, 0, 0.08);
+      --shadow-lg: 0 15px 40px rgba(42, 32, 0, 0.12);
+    }
+    body.theme-mustard.dark-theme {
+      --bg: #1A1500;
+      --surface: #251D00;
+      --surface2: #332A00;
+      --border: #4D3D00;
+      --border-focus: #F0C030;
+      --text: #FFF8D6;
+      --text-sub: #D4B050;
+      --text-label: #9A7E30;
+      --accent: #F0C030;
+      --accent-dim: rgba(240, 192, 48, 0.15);
+      --accent-text: #1A1500;
+      --danger: #EF5350;
+      --danger-light: #4A1A1A;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-md: 0 10px 30px rgba(0,0,0,0.4);
+      --shadow-lg: 0 15px 40px rgba(0,0,0,0.5);
+    }
+
+    /* ── 8. 아이보리 테마 ── */
+    body.theme-ivory {
+      --bg: #FDFAF4;
+      --surface: #FFF9EE;
+      --surface2: #F5EDD8;
+      --border: #E8D9BB;
+      --border-focus: #9A7B4E;
+      --text: #2C2210;
+      --text-sub: #7A6344;
+      --text-label: #A89070;
+      --accent: #9A7B4E;
+      --accent-dim: rgba(154, 123, 78, 0.12);
+      --accent-text: #FFFFFF;
+      --danger: #C0392B;
+      --danger-light: #FDECEA;
+      --shadow-sm: 0 2px 8px rgba(44, 34, 16, 0.05);
+      --shadow-md: 0 10px 30px rgba(44, 34, 16, 0.09);
+      --shadow-lg: 0 15px 40px rgba(44, 34, 16, 0.13);
+    }
+    body.theme-ivory.dark-theme {
+      --bg: #1E1A12;
+      --surface: #28221A;
+      --surface2: #352D22;
+      --border: #4A3E2C;
+      --border-focus: #C8A870;
+      --text: #F5EDD8;
+      --text-sub: #C0A070;
+      --text-label: #8A7050;
+      --accent: #C8A870;
+      --accent-dim: rgba(200, 168, 112, 0.15);
+      --accent-text: #1E1A12;
+      --danger: #EF5350;
+      --danger-light: #4A1A1A;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-md: 0 10px 30px rgba(0,0,0,0.4);
+      --shadow-lg: 0 15px 40px rgba(0,0,0,0.5);
+    }
+
+    /* ── 9. 로즈 테마 ── */
+    body.theme-rose {
+      --bg: #FFF5F7;
+      --surface: #FFFFFF;
+      --surface2: #FFE8EE;
+      --border: #FFD0DB;
+      --border-focus: #E11D78;
+      --text: #2D0A18;
+      --text-sub: #8B4060;
+      --text-label: #C07090;
+      --accent: #E11D78;
+      --accent-dim: rgba(225, 29, 120, 0.12);
+      --accent-text: #FFFFFF;
+      --danger: #DC2626;
+      --danger-light: #FEE2E2;
+      --shadow-sm: 0 2px 8px rgba(45, 10, 24, 0.04);
+      --shadow-md: 0 10px 30px rgba(45, 10, 24, 0.08);
+      --shadow-lg: 0 15px 40px rgba(45, 10, 24, 0.12);
+    }
+    body.theme-rose.dark-theme {
+      --bg: #1A0510;
+      --surface: #260A18;
+      --surface2: #371024;
+      --border: #52183A;
+      --border-focus: #F472B6;
+      --text: #FEE6F0;
+      --text-sub: #F9A8D4;
+      --text-label: #C06090;
+      --accent: #F472B6;
+      --accent-dim: rgba(244, 114, 182, 0.15);
+      --danger: #F87171;
+      --danger-light: #451A1A;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-md: 0 10px 30px rgba(0,0,0,0.4);
+      --shadow-lg: 0 15px 40px rgba(0,0,0,0.5);
     }
 
     html, body { height: 100%; overflow: hidden; }
@@ -74,55 +370,102 @@
       transition: background-color 0.3s, color 0.3s;
     }
 
-    /* ── Header ── */
-    header {
-      height: var(--header-h);
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
+    /* ── 상단바(Header) ── */
+    .sidebar-header {
       display: flex;
       align-items: center;
-      padding: 0 24px;
-      position: relative;
-      z-index: 10;
-      flex-shrink: 0;
-      box-shadow: var(--shadow-sm);
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
     }
 
     #logo-btn {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       background: none;
       border: none;
       cursor: pointer;
       color: var(--text);
       font-size: 18px;
       font-weight: 800;
-      padding: 8px 12px;
+      padding: 6px 0;
       border-radius: var(--radius-md);
     }
     #logo-btn svg { color: var(--accent); }
     
     .header-actions {
-      margin-left: auto;
       display: flex;
-      align-items: center;
-      gap: 12px;
+      gap: 8px;
+      position: relative;
     }
 
     .icon-btn {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       border: 1px solid var(--border);
       background: var(--surface);
       color: var(--text-sub);
       border-radius: var(--radius-md);
       cursor: pointer;
       box-shadow: var(--shadow-sm);
+      transition: var(--transition);
     }
+    .icon-btn:hover { background: var(--surface2); color: var(--accent); }
+
+    /* 테마 컬러 팔레트 팝업 */
+    #color-palette {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(5, 24px);
+      gap: 10px;
+      box-shadow: var(--shadow-md);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-5px);
+      transition: all 0.2s;
+      z-index: 100;
+    }
+    #color-palette.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    .color-swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform 0.1s, border-color 0.2s;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+    }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.active { border-color: var(--text); transform: scale(1.15); box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--text); }
+    
+    .swatch-blue { background: #3B82F6; }
+    .swatch-orange { background: #D97757; }
+    .swatch-green { background: #10B981; }
+    .swatch-brown { background: #A0522D; }
+    .swatch-bw { background: #52525B; }
+    .swatch-purple { background: #7C3AED; }
+    .swatch-mustard { background: #C8960A; }
+    .swatch-ivory { background: #C4A875; }
+    .swatch-rose { background: #E11D78; }
+    
+    body.dark-theme .swatch-bw { background: #FAFAFA; }
+    body.dark-theme .swatch-ivory { background: #C8A870; }
 
     /* ── Layout ── */
     .layout {
@@ -143,16 +486,16 @@
     }
 
     .sidebar-inner {
-      padding: 32px 24px;
+      padding: 24px;
       display: flex;
       flex-direction: column;
-      gap: 32px;
+      gap: 28px;
     }
 
     .sidebar-section-title {
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 800;
-      color: var(--accent);
+      color: var(--text); 
       margin-bottom: 16px;
       text-transform: uppercase;
       letter-spacing: 0.1em;
@@ -186,14 +529,11 @@
     }
     
     select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238C867E' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 16px center;
       padding-right: 42px;
       cursor: pointer;
-    }
-    body.dark-theme select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888E88' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
     }
     
     select:focus, input[type="number"]:focus, input[type="text"]:focus {
@@ -232,6 +572,7 @@
       font-weight: 700;
       color: var(--text-sub);
       cursor: pointer;
+      transition: var(--transition);
     }
     .orient-btn svg { width: 24px; height: 24px; stroke-width: 2; }
 
@@ -316,6 +657,7 @@
       cursor: pointer;
       user-select: none;
       box-shadow: var(--shadow-sm);
+      transition: var(--transition);
     }
     #dropzone.drag-over {
       border-color: var(--accent);
@@ -370,6 +712,7 @@
       border-bottom: 1px solid var(--border);
       background: var(--surface);
       flex-shrink: 0;
+      flex-wrap: wrap;
     }
     
     .toolbar-spacer { flex: 1; }
@@ -399,13 +742,14 @@
       font-family: inherit;
       white-space: nowrap;
       user-select: none;
+      transition: opacity 0.2s, background-color 0.2s;
     }
     .btn svg { flex-shrink: 0; width: 18px; height: 18px; }
     
     .btn-primary {
       background: var(--accent);
       color: var(--accent-text);
-      box-shadow: 0 4px 12px rgba(88, 115, 99, 0.3);
+      box-shadow: 0 4px 12px var(--accent-dim);
     }
     .btn-primary:active { opacity: 0.9; }
     
@@ -460,12 +804,10 @@
     }
     .img-card:active { cursor: grabbing; }
     
-    /* 드래그 중인 카드 상태 */
     .img-card.dragging {
       opacity: 0.3;
     }
 
-    /* ── 썸네일 사이 '삽입 라인' 가이드 피드백 ── */
     .img-card.drop-before::before {
       content: '';
       position: absolute;
@@ -493,7 +835,7 @@
     }
 
     .img-card-thumb {
-      aspect-ratio: 1/1; /* 3/4에서 1/1 (정사각형)로 변경 */
+      aspect-ratio: 1/1;
       overflow: hidden;
       background: var(--surface2);
       border-bottom: 1px solid var(--border);
@@ -511,7 +853,7 @@
       position: absolute;
       top: 12px;
       left: 12px;
-      background: rgba(51, 48, 44, 0.75);
+      background: rgba(45, 44, 42, 0.75);
       backdrop-filter: blur(4px);
       color: #fff;
       font-size: 12px;
@@ -543,7 +885,6 @@
       flex: 1;
     }
 
-    /* 액션 버튼 영역 */
     .img-card-actions {
       display: flex;
       justify-content: space-between;
@@ -579,7 +920,7 @@
     #progress-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(51, 48, 44, 0.5);
+      background: rgba(45, 44, 42, 0.5);
       backdrop-filter: blur(8px);
       display: none;
       flex-direction: column;
@@ -656,47 +997,81 @@
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast svg { color: var(--accent); }
 
-    /* Scrollbar styling */
     ::-webkit-scrollbar { width: 10px; height: 10px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; border: 3px solid transparent; background-clip: content-box; }
 
+    /* ── 모바일 세로 배치 반응형 레이아웃 ── */
     @media (max-width: 900px) {
-      :root { --sidebar-w: 240px; }
-      #img-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+      html, body { height: auto; overflow: auto; display: block; }
+      .layout { flex-direction: column; overflow: visible; }
+      aside { width: 100%; border-right: none; border-bottom: 2px solid var(--border); overflow: visible; }
+      .sidebar-inner { padding: 20px; gap: 20px; }
+      main { overflow: visible; min-height: 70vh; padding: 20px; }
+      #img-scroll { overflow: visible; padding: 16px 0 40px; }
+      #workspace { overflow: visible; }
+      #img-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+      .toolbar { flex-wrap: wrap; justify-content: center; gap: 10px; }
+      .toolbar-spacer { display: none; }
+      #generate-btn { width: 100%; }
     }
   </style>
 </head>
 <body>
 
-<!-- ── Header ── -->
-<header>
-  <button id="logo-btn" title="처음으로 돌아가기">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-      <line x1="16" y1="13" x2="8" y2="13"/>
-      <line x1="16" y1="17" x2="8" y2="17"/>
-      <polyline points="10 9 9 9 8 9"/>
-    </svg>
-    이미지 to PDF
-  </button>
-  
-  <div class="header-actions">
-    <button class="icon-btn" id="theme-toggle" title="다크/라이트 모드 전환">
-      <svg id="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-      </svg>
-    </button>
-  </div>
-</header>
-
 <!-- ── Layout ── -->
 <div class="layout">
 
-  <!-- ── Sidebar ── -->
+  <!-- ── Sidebar (설정창) ── -->
   <aside>
     <div class="sidebar-inner">
+      
+      <!-- ── 상단바에서 넘어온 로고 및 다크모드/테마 버튼 ── -->
+      <div class="sidebar-header">
+        <button id="logo-btn" title="처음으로 돌아가기">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          img2PDF
+        </button>
+        
+        <div class="header-actions">
+          <!-- 테마 선택 버튼 -->
+          <button class="icon-btn" id="color-theme-toggle" title="테마색 선택">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+              <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
+              <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>
+              <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle>
+              <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.06 0 1.94-.92 1.94-2.05 0-.52-.2-.99-.53-1.34-.33-.35-.55-.83-.55-1.36 0-1.07.89-1.94 1.96-1.94h2.19c2.76 0 5-2.24 5-5 0-4.42-4.48-8-10-8z"></path>
+            </svg>
+          </button>
+          
+          <!-- 다크모드 버튼 -->
+          <button class="icon-btn" id="theme-toggle" title="다크/라이트 모드 전환">
+            <svg id="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          
+          <!-- 컬러 팔레트 팝업 -->
+          <div id="color-palette">
+            <button class="color-swatch swatch-blue" data-theme="theme-blue" title="파랑"></button>
+            <button class="color-swatch swatch-orange" data-theme="theme-orange" title="오렌지"></button>
+            <button class="color-swatch swatch-green" data-theme="theme-green" title="초록"></button>
+            <button class="color-swatch swatch-brown" data-theme="theme-brown" title="갈색"></button>
+            <button class="color-swatch swatch-bw" data-theme="theme-bw" title="흑백"></button>
+            <button class="color-swatch swatch-purple" data-theme="theme-purple" title="퍼플"></button>
+            <button class="color-swatch swatch-mustard" data-theme="theme-mustard" title="머스터드"></button>
+            <button class="color-swatch swatch-ivory" data-theme="theme-ivory" title="아이보리"></button>
+            <button class="color-swatch swatch-rose" data-theme="theme-rose" title="로즈"></button>
+          </div>
+        </div>
+      </div>
 
       <!-- 크기 -->
       <div>
@@ -789,7 +1164,7 @@
     </div>
   </aside>
 
-  <!-- ── Main Content ── -->
+  <!-- ── Main Content (이미지 입력 공간) ── -->
   <main>
 
     <!-- Drop zone (empty state) -->
@@ -809,9 +1184,7 @@
     <!-- Image workspace -->
     <div id="workspace" style="display:none;">
       
-      <!-- ── 재배치된 버튼 툴바 ── -->
       <div class="toolbar">
-        <!-- 메인 액션인 PDF 다운로드를 맨 왼쪽으로 이동 -->
         <button class="btn btn-primary" id="generate-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -821,7 +1194,6 @@
         
         <div class="toolbar-spacer"></div>
         
-        <!-- 이미지 관리 기능들을 우측으로 묶음 -->
         <span class="toolbar-count" id="img-count">0장</span>
 
         <button class="btn btn-ghost" id="add-more-btn">
@@ -870,15 +1242,26 @@
 <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/gif" multiple style="display:none">
 
 <script>
-  // ─── Theme Toggle ─────────────────────────────────────────────────────────────
+  // ─── Theme & Color Palette ──────────────────────────────────────────────────
   const themeToggle = document.getElementById('theme-toggle');
   const themeIcon = document.getElementById('theme-icon');
   
-  if (localStorage.getItem('theme') === 'dark') {
+  const colorThemeToggle = document.getElementById('color-theme-toggle');
+  const colorPalette = document.getElementById('color-palette');
+  const colorSwatches = document.querySelectorAll('.color-swatch');
+
+  // Load Saved Themes
+  const isDarkMode = localStorage.getItem('theme') === 'dark';
+  const savedColorTheme = localStorage.getItem('colorTheme') || 'theme-blue'; // 기본 테마를 파란색으로 설정
+  
+  if (isDarkMode) {
     document.body.classList.add('dark-theme');
     updateThemeIcon(true);
   }
+  document.body.classList.add(savedColorTheme);
+  updateActiveSwatch(savedColorTheme);
 
+  // 다크모드 토글
   themeToggle.addEventListener('click', () => {
     document.body.classList.toggle('dark-theme');
     const isDark = document.body.classList.contains('dark-theme');
@@ -892,6 +1275,44 @@
     } else {
       themeIcon.innerHTML = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
     }
+  }
+
+  // 색상 팔레트 열기/닫기
+  colorThemeToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    colorPalette.classList.toggle('show');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!colorPalette.contains(e.target) && e.target !== colorThemeToggle) {
+      colorPalette.classList.remove('show');
+    }
+  });
+
+  // 색상 테마 변경
+  colorSwatches.forEach(swatch => {
+    swatch.addEventListener('click', (e) => {
+      const newTheme = e.target.dataset.theme;
+      
+      // 기존 테마 클래스 제거
+      document.body.classList.remove('theme-blue', 'theme-orange', 'theme-green', 'theme-brown', 'theme-bw', 'theme-purple', 'theme-mustard', 'theme-ivory', 'theme-rose');
+      // 새 테마 적용
+      document.body.classList.add(newTheme);
+      
+      localStorage.setItem('colorTheme', newTheme);
+      updateActiveSwatch(newTheme);
+      colorPalette.classList.remove('show');
+    });
+  });
+
+  function updateActiveSwatch(themeName) {
+    colorSwatches.forEach(swatch => {
+      if (swatch.dataset.theme === themeName) {
+        swatch.classList.add('active');
+      } else {
+        swatch.classList.remove('active');
+      }
+    });
   }
 
   // ─── State ───────────────────────────
